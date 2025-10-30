@@ -1,0 +1,164 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyO87QJmKKEwnG2ytVkuTSzL",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/gtretow/spotify-Dashboard/blob/main/Spotify%20Dashboard\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from dotenv import load_dotenv\n",
+        "from google.colab import userdata\n",
+        "import os\n",
+        "import base64\n",
+        "from requests import post, put, get\n",
+        "import json\n",
+        "\n",
+        "load_dotenv()\n",
+        "client_id = userdata.get(\"CLIENT_ID\")\n",
+        "client_secret = userdata.get(\"CLIENT_SECRET\")"
+      ],
+      "metadata": {
+        "id": "P3rLigdaSdlg"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "def get_token():\n",
+        "  auth_string = client_id +\":\" + client_secret\n",
+        "  auth_bytes = auth_string.encode(\"utf-8\")\n",
+        "  auth_base64 = str(base64.b64encode(auth_bytes),\"utf-8\")\n",
+        "\n",
+        "  url = \"https://accounts.spotify.com/api/token\"\n",
+        "  headers = {\n",
+        "      \"Authorization\": \"Basic \" + auth_base64,\n",
+        "      \"Content-Type\": \"application/x-www-form-urlencoded\"\n",
+        "  }\n",
+        "  data = {\"grant_type\": \"client_credentials\"\n",
+        "  }\n",
+        "  result = post(url, headers=headers, data=data)\n",
+        "  json_result = json.loads(result.content)\n",
+        "  token = json_result[\"access_token\"]\n",
+        "\n",
+        "  return token"
+      ],
+      "metadata": {
+        "id": "2Nt4-ccRTAli"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "def get_auth_headers(token):\n",
+        "  return {\"Authorization\": \"Bearer \" + token}"
+      ],
+      "metadata": {
+        "id": "D03DISCuUD7g"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "def search_for_artist(token,artist_name):\n",
+        "  url = f\"https://api.spotify.com/v1/search\"\n",
+        "  headers = get_auth_headers(token)\n",
+        "  query = f\"?q={artist_name}&type=artist&limit=1\"\n",
+        "  query_url = url + query\n",
+        "  result = get(query_url, headers=headers)\n",
+        "  json_result = json.loads(result.content)[\"artists\"][\"items\"]\n",
+        "  if len(json_result) == 0:\n",
+        "    print(\"No artist with this name exists...\")\n",
+        "    return None\n",
+        "  return json_result[0]\n",
+        "\n",
+        "def get_songs_by_artist(token,artist_id):\n",
+        "  url=f\"https://api.spotify.com/v1/artists/{artist_id}/top-tracks?country=BR\"\n",
+        "  headers = get_auth_headers(token)\n",
+        "  result = get(url, headers=headers)\n",
+        "  json_result = json.loads(result.content)[\"tracks\"]\n",
+        "  return json_result"
+      ],
+      "metadata": {
+        "id": "AjcnffObWkae"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "token = get_token()\n",
+        "result = search_for_artist(token,\"Djavan\")\n",
+        "artist_id = result[\"id\"]"
+      ],
+      "metadata": {
+        "id": "DZvzixWOXVo_"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "songs = get_songs_by_artist(token,artist_id)\n",
+        "for idx, song in enumerate(songs):\n",
+        "  print(f\"{idx + 1}. {song['name']}\")\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "_3PsR87vXg5d",
+        "outputId": "2b679b57-2fd0-4daa-ddd4-bf56a291bd96"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "1. Oceano\n",
+            "2. Se...\n",
+            "3. Um Amor Puro\n",
+            "4. Se... (Ao Vivo)\n",
+            "5. Eu Te Devoro - Ao Vivo\n",
+            "6. Eu Te Devoro\n",
+            "7. Flor de Lis\n",
+            "8. Uma Brasileira\n",
+            "9. Samurai (feat. Stevie Wonder)\n",
+            "10. Sina\n"
+          ]
+        }
+      ]
+    }
+  ]
+}
